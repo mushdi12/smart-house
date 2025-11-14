@@ -1,0 +1,1194 @@
+openapi: 3.0.3
+info:
+  title: Умный дом - API системы управления
+  description: |
+    API для системы "Умный дом", обеспечивающее:
+    - Управление температурой (повышение/понижение)
+    - Управление влажностью (повышение/понижение)
+    - Управление воротами (поднять/опустить)
+    - Просмотр графиков изменения напряжения
+    - Авторизацию пользователей
+  version: 1.0.0
+  contact:
+    name: Команда разработчиков
+    email: support@smarthouse.local
+
+servers:
+  - url: http://localhost:8080/api
+    description: Локальный сервер разработки
+  - url: http://raspberry-pi.local:8080/api
+    description: Сервер на Raspberry Pi
+
+tags:
+  - name: auth
+    description: Авторизация и аутентификация
+  - name: temperature
+    description: Управление температурой
+  - name: humidity
+    description: Управление влажностью
+  - name: gate
+    description: Управление воротами
+  - name: voltage
+    description: Мониторинг напряжения
+  - name: health
+    description: Проверка работоспособности
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Вход в систему
+      description: Аутентификация пользователя и получение JWT токена
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Обновление токена
+      description: Обновление JWT токена с помощью refresh токена
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Токен успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Недействительный refresh токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Выход из системы
+      description: Выход из системы и инвалидация токена
+      operationId: logout
+      responses:
+        '200':
+          description: Успешный выход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/me:
+    get:
+      tags:
+        - auth
+      summary: Получить информацию о текущем пользователе
+      description: Возвращает информацию об авторизованном пользователе
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Успешное получение данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /temperature/increase:
+    post:
+      tags:
+        - temperature
+      summary: Повысить температуру
+      description: Увеличивает температуру в системе на указанное значение
+      operationId: increaseTemperature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemperatureControl'
+      responses:
+        '200':
+          description: Температура успешно повышена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /temperature/decrease:
+    post:
+      tags:
+        - temperature
+      summary: Понизить температуру
+      description: Уменьшает температуру в системе на указанное значение
+      operationId: decreaseTemperature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemperatureControl'
+      responses:
+        '200':
+          description: Температура успешно понижена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /temperature/current:
+    get:
+      tags:
+        - temperature
+      summary: Получить текущую температуру
+      description: Возвращает текущее значение температуры в системе
+      operationId: getCurrentTemperature
+      responses:
+        '200':
+          description: Успешное получение данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureStatus'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /humidity/increase:
+    post:
+      tags:
+        - humidity
+      summary: Повысить влажность
+      description: Увеличивает влажность в системе на указанное значение
+      operationId: increaseHumidity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HumidityControl'
+      responses:
+        '200':
+          description: Влажность успешно повышена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HumidityResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /humidity/decrease:
+    post:
+      tags:
+        - humidity
+      summary: Понизить влажность
+      description: Уменьшает влажность в системе на указанное значение
+      operationId: decreaseHumidity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HumidityControl'
+      responses:
+        '200':
+          description: Влажность успешно понижена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HumidityResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /humidity/current:
+    get:
+      tags:
+        - humidity
+      summary: Получить текущую влажность
+      description: Возвращает текущее значение влажности в системе
+      operationId: getCurrentHumidity
+      responses:
+        '200':
+          description: Успешное получение данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HumidityStatus'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /gate/raise:
+    post:
+      tags:
+        - gate
+      summary: Поднять ворота
+      description: Команда на поднятие ворот
+      operationId: raiseGate
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                speed:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: Скорость поднятия (1-100)
+                  example: 50
+      responses:
+        '200':
+          description: Команда на поднятие ворот успешно выполнена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GateResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /gate/lower:
+    post:
+      tags:
+        - gate
+      summary: Опустить ворота
+      description: Команда на опускание ворот
+      operationId: lowerGate
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                speed:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: Скорость опускания (1-100)
+                  example: 50
+      responses:
+        '200':
+          description: Команда на опускание ворот успешно выполнена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GateResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /gate/status:
+    get:
+      tags:
+        - gate
+      summary: Получить статус ворот
+      description: Возвращает текущее состояние ворот (подняты/опущены/в движении)
+      operationId: getGateStatus
+      responses:
+        '200':
+          description: Успешное получение статуса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GateStatus'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /voltage/history:
+    get:
+      tags:
+        - voltage
+      summary: Получить историю изменения напряжения
+      description: |
+        Возвращает исторические данные изменения напряжения для построения графиков.
+        Данные можно фильтровать по периоду времени.
+      operationId: getVoltageHistory
+      parameters:
+        - name: from
+          in: query
+          description: Начало периода (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: "2024-11-10T00:00:00Z"
+        - name: to
+          in: query
+          description: Конец периода (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: "2024-11-10T23:59:59Z"
+        - name: interval
+          in: query
+          description: Интервал агрегации данных (для графиков)
+          required: false
+          schema:
+            type: string
+            enum:
+              - minute
+              - hour
+              - day
+            default: minute
+          example: "minute"
+        - name: limit
+          in: query
+          description: Максимальное количество точек данных
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 1000
+          example: 1000
+      responses:
+        '200':
+          description: Успешное получение данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoltageHistory'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /voltage/current:
+    get:
+      tags:
+        - voltage
+      summary: Получить текущее напряжение
+      description: Возвращает текущее значение напряжения в системе
+      operationId: getCurrentVoltage
+      responses:
+        '200':
+          description: Успешное получение данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoltageCurrent'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /voltage/stats:
+    get:
+      tags:
+        - voltage
+      summary: Получить статистику по напряжению
+      description: Возвращает статистические данные по напряжению за период
+      operationId: getVoltageStats
+      parameters:
+        - name: from
+          in: query
+          description: Начало периода (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Конец периода (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Успешное получение статистики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoltageStats'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизованный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Проверка работоспособности системы
+      description: Возвращает статус системы и доступность компонентов
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Система работает нормально
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Система недоступна
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен авторизации
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+          example: "admin"
+        password:
+          type: string
+          format: password
+          description: Пароль
+          example: "password123"
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh токен для обновления access токена
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: JWT access токен
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          description: JWT refresh токен
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expires_in:
+          type: integer
+          description: Время жизни access токена в секундах
+          example: 3600
+        token_type:
+          type: string
+          default: "Bearer"
+          description: Тип токена
+          example: "Bearer"
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - role
+      properties:
+        id:
+          type: string
+          description: Уникальный идентификатор пользователя
+          example: "user_001"
+        username:
+          type: string
+          description: Имя пользователя
+          example: "admin"
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "admin@smarthouse.local"
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+          description: Роль пользователя
+          example: "admin"
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания аккаунта
+          example: "2024-11-10T10:00:00Z"
+
+    MessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Сообщение
+          example: "Успешно выполнено"
+
+    TemperatureControl:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          format: float
+          minimum: 0.1
+          maximum: 10.0
+          description: Значение изменения температуры в градусах Цельсия
+          example: 2.5
+        unit:
+          type: string
+          enum:
+            - celsius
+            - fahrenheit
+          default: celsius
+          description: Единица измерения
+          example: "celsius"
+
+    TemperatureResponse:
+      type: object
+      required:
+        - success
+        - current_temperature
+      properties:
+        success:
+          type: boolean
+          description: Успешность выполнения команды
+          example: true
+        message:
+          type: string
+          description: Сообщение о результате
+          example: "Температура успешно повышена на 2.5°C"
+        current_temperature:
+          type: number
+          format: float
+          description: Текущая температура после изменения
+          example: 25.5
+        previous_temperature:
+          type: number
+          format: float
+          description: Предыдущая температура
+          example: 23.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Время выполнения команды
+          example: "2024-11-10T12:00:00Z"
+
+    TemperatureStatus:
+      type: object
+      required:
+        - temperature
+        - timestamp
+      properties:
+        temperature:
+          type: number
+          format: float
+          description: Текущая температура
+          example: 23.5
+        unit:
+          type: string
+          default: "celsius"
+          description: Единица измерения
+          example: "celsius"
+        target_temperature:
+          type: number
+          format: float
+          description: Целевая температура
+          example: 22.0
+        status:
+          type: string
+          enum:
+            - heating
+            - cooling
+            - stable
+          description: Статус системы отопления/охлаждения
+          example: "heating"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+          example: "2024-11-10T12:00:00Z"
+
+    HumidityControl:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          format: float
+          minimum: 0.1
+          maximum: 20.0
+          description: Значение изменения влажности в процентах
+          example: 5.0
+        unit:
+          type: string
+          enum:
+            - percent
+          default: percent
+          description: Единица измерения
+          example: "percent"
+
+    HumidityResponse:
+      type: object
+      required:
+        - success
+        - current_humidity
+      properties:
+        success:
+          type: boolean
+          description: Успешность выполнения команды
+          example: true
+        message:
+          type: string
+          description: Сообщение о результате
+          example: "Влажность успешно повышена на 5%"
+        current_humidity:
+          type: number
+          format: float
+          description: Текущая влажность после изменения
+          example: 55.0
+        previous_humidity:
+          type: number
+          format: float
+          description: Предыдущая влажность
+          example: 50.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Время выполнения команды
+          example: "2024-11-10T12:00:00Z"
+
+    HumidityStatus:
+      type: object
+      required:
+        - humidity
+        - timestamp
+      properties:
+        humidity:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Текущая влажность в процентах
+          example: 50.0
+        unit:
+          type: string
+          default: "percent"
+          description: Единица измерения
+          example: "percent"
+        target_humidity:
+          type: number
+          format: float
+          description: Целевая влажность
+          example: 45.0
+        status:
+          type: string
+          enum:
+            - increasing
+            - decreasing
+            - stable
+          description: Статус системы увлажнения
+          example: "increasing"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+          example: "2024-11-10T12:00:00Z"
+
+    GateResponse:
+      type: object
+      required:
+        - success
+        - action
+        - status
+      properties:
+        success:
+          type: boolean
+          description: Успешность выполнения команды
+          example: true
+        action:
+          type: string
+          enum:
+            - raise
+            - lower
+          description: Выполненное действие
+          example: "raise"
+        message:
+          type: string
+          description: Сообщение о результате
+          example: "Команда на поднятие ворот успешно отправлена"
+        status:
+          type: string
+          enum:
+            - raised
+            - lowered
+            - raising
+            - lowering
+            - stopped
+            - error
+          description: Текущий статус ворот
+          example: "raising"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время выполнения команды
+          example: "2024-11-10T12:00:00Z"
+
+    GateStatus:
+      type: object
+      required:
+        - status
+        - position
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - raised
+            - lowered
+            - raising
+            - lowering
+            - stopped
+            - error
+          description: Текущий статус ворот
+          example: "raised"
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Позиция ворот в процентах (0 - полностью опущены, 100 - полностью подняты)
+          example: 100
+        last_action:
+          type: string
+          enum:
+            - raise
+            - lower
+            - stop
+          nullable: true
+          description: Последнее выполненное действие
+          example: "raise"
+        last_action_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время последнего действия
+          example: "2024-11-10T12:00:00Z"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время последнего обновления статуса
+          example: "2024-11-10T12:00:00Z"
+
+    VoltageDataPoint:
+      type: object
+      required:
+        - timestamp
+        - voltage
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Время измерения
+          example: "2024-11-10T12:00:00Z"
+        voltage:
+          type: number
+          format: float
+          description: Значение напряжения в вольтах
+          example: 220.5
+        current:
+          type: number
+          format: float
+          nullable: true
+          description: Значение тока в амперах (если доступно)
+          example: 2.5
+        power:
+          type: number
+          format: float
+          nullable: true
+          description: Значение мощности в ваттах (если доступно)
+          example: 550.0
+
+    VoltageHistory:
+      type: object
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          description: Массив точек данных для построения графика
+          items:
+            $ref: '#/components/schemas/VoltageDataPoint'
+        total:
+          type: integer
+          description: Общее количество записей
+          example: 1440
+        from:
+          type: string
+          format: date-time
+          description: Начало периода
+          example: "2024-11-10T00:00:00Z"
+        to:
+          type: string
+          format: date-time
+          description: Конец периода
+          example: "2024-11-10T23:59:59Z"
+        interval:
+          type: string
+          description: Интервал агрегации данных
+          example: "minute"
+
+    VoltageCurrent:
+      type: object
+      required:
+        - voltage
+        - timestamp
+      properties:
+        voltage:
+          type: number
+          format: float
+          description: Текущее напряжение в вольтах
+          example: 220.5
+        current:
+          type: number
+          format: float
+          nullable: true
+          description: Текущий ток в амперах
+          example: 2.5
+        power:
+          type: number
+          format: float
+          nullable: true
+          description: Текущая мощность в ваттах
+          example: 550.0
+        frequency:
+          type: number
+          format: float
+          nullable: true
+          description: Частота в герцах
+          example: 50.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Время измерения
+          example: "2024-11-10T12:00:00Z"
+
+    VoltageStats:
+      type: object
+      required:
+        - min
+        - max
+        - avg
+        - count
+      properties:
+        min:
+          type: number
+          format: float
+          description: Минимальное значение напряжения за период
+          example: 215.0
+        max:
+          type: number
+          format: float
+          description: Максимальное значение напряжения за период
+          example: 225.0
+        avg:
+          type: number
+          format: float
+          description: Среднее значение напряжения за период
+          example: 220.2
+        count:
+          type: integer
+          description: Количество измерений
+          example: 1440
+        from:
+          type: string
+          format: date-time
+          description: Начало периода
+          example: "2024-11-10T00:00:00Z"
+        to:
+          type: string
+          format: date-time
+          description: Конец периода
+          example: "2024-11-10T23:59:59Z"
+
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+          description: Общий статус системы
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время проверки
+          example: "2024-11-10T12:00:00Z"
+        components:
+          type: object
+          description: Статус отдельных компонентов
+          additionalProperties:
+            type: string
+            enum:
+              - healthy
+              - degraded
+              - unhealthy
+          example:
+            database: "healthy"
+            temperature_controller: "healthy"
+            humidity_controller: "healthy"
+            gate_controller: "healthy"
+            voltage_monitor: "healthy"
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Код ошибки
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Описание ошибки
+          example: "Требуется авторизация"
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+          example: "2024-11-10T12:00:00Z"
+
