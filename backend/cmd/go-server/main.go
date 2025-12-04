@@ -39,6 +39,14 @@ func main() {
 	}
 	defer closers.CloseOrLog(log, espClient)
 
+	// для тестирования
+	// if err != nil {
+	// 	log.Warn("cannot init ESP client, running in stub mode", "error", err)
+	// 	espClient = nil
+	// } else {
+	// 	defer closers.CloseOrLog(log, espClient)
+	// }
+
 	// service := core.NewService(espClient, log) ????
 	server := mustSetupHTTPServer(log, cfg, espClient)
 
@@ -65,38 +73,129 @@ func main() {
 
 func mustSetupHTTPServer(log *slog.Logger, cfg config.Config, espClient *uart.Client) *http.Server {
 	mux := http.NewServeMux()
-	// restServer := rest.NewServer(service, log)
+	//restServer := rest.NewServer(service, log)
 
 	// fan endpoints
 	mux.Handle("/api/fan/on", middleware.Logger(rest.NewTurnOnFan(log, espClient), log))
 	mux.Handle("/api/fan/off", middleware.Logger(rest.NewTurnOffFan(log, espClient), log))
 
+	// Lamp endpoints
+	mux.Handle("/api/lamp/on", middleware.Logger(rest.NewTurnOnLight(log, espClient), log))
+	mux.Handle("/api/lamp/off", middleware.Logger(rest.NewTurnOffLight(log, espClient), log))
+
 	// Temperature endpoints
-	// mux.Handle("/api/temperature/increase", rest.NewHandleIncreaseTemperature())
-	// mux.Handle("/api/temperature/decrease", rest.NewHandleDecreaseTemperature())
-	// mux.Handle("/api/temperature/current", rest.NewHandleGetCurrentTemperature())
+	mux.HandleFunc("/api/temperature/increase", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"message":"Температура успешно повышена на 2.5°C","current_temperature":25.5,"previous_temperature":23.0,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/temperature/decrease", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"message":"Температура успешно понижена на 2.5°C","current_temperature":20.5,"previous_temperature":23.0,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/temperature/current", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"temperature":23.5,"unit":"celsius","target_temperature":22.0,"status":"stable","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
 
 	// Humidity endpoints
-	// mux.Handle("/api/humidity/increase", rest.handleIncreaseHumidity())
-	// mux.Handle("/api/humidity/decrease", rest.handleDecreaseHumidity())
-	// mux.Handle("/api/humidity/current", rest.handleGetCurrentHumidity())
+	mux.HandleFunc("/api/humidity/increase", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"current_humidity":55.0,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/humidity/decrease", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"current_humidity":50.0,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/humidity/current", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"humidity":52.0,"unit":"percent","status":"stable","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
 
 	// Gate endpoints
-	// mux.Handle("/api/gate/raise", rest.handleRaiseGate())
-	// mux.Handle("/api/gate/lower", rest.handleLowerGate())
-	// mux.Handle("/api/gate/status", rest.handleGetGateStatus())
+	mux.HandleFunc("/api/gate/raise", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"action":"raise","status":"raising","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/gate/lower", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"action":"lower","status":"lowering","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/gate/status", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"raised","position":100,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
 
 	// Voltage endpoints
-	// mux.Handle("/api/voltage/current", rest.handleGetCurrentVoltage())
-	// mux.Handle("/api/voltage/history", rest.handleGetVoltageHistory())
-	// mux.Handle("/api/voltage/stats", rest.handleGetVoltageStats())
+	mux.HandleFunc("/api/voltage/current", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"voltage":220.5,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/voltage/history", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"data":[{"timestamp":"2024-01-01T00:00:00Z","voltage":220.5}],"total":1}`))
+	})
+	mux.HandleFunc("/api/voltage/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"min":215.0,"max":225.0,"avg":220.0,"count":100}`))
+	})
 
-	// Lamp endpoints
-	// mux.Handle("/api/lamp/on", rest.handleTurnOnLamp())
-	// mux.Handle("/api/lamp/off", rest.handleTurnOffLamp())
+	// Auth endpoints
+	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"access_token":"stub","refresh_token":"stub","expires_in":3600,"token_type":"Bearer"}`))
+	})
+	mux.HandleFunc("/api/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"OK"}`))
+	})
+
+	// RGB endpoints
+	mux.HandleFunc("/api/rgb/on", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"status":"on","power":60,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/rgb/off", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"status":"off","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/rgb/power", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"status":"on","power":80,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+
+	// Fan endpoints (дополнительные)
+	mux.HandleFunc("/api/fan/power", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"status":"on","power":50,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/fan/status", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"on","power":50,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+
+	// Motion endpoints
+	mux.HandleFunc("/api/motion/enable", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"message":"Датчик движения включен","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/motion/disable", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"message":"Датчик движения выключен","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/motion/notifications", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true,"message":"Настройки сохранены","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("/api/motion/status", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"enabled":true,"notify_phone":false,"trigger_rgb":false,"timestamp":"2024-01-01T00:00:00Z"}`))
+	})
 
 	// Health endpoint
-	// mux.Handle("/api/health", rest.handleHealth())
+	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy","timestamp":"2024-01-01T00:00:00Z"}`))
+	})
 
 	return &http.Server{
 		Addr:        cfg.HTTPConfig.Address,

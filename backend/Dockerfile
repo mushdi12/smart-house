@@ -23,8 +23,8 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/bin/go-server .
 
-# Copy config file if exists
-COPY config.yaml* ./
+# Copy config file from builder
+COPY --from=builder /app/config.yaml* ./
 
 EXPOSE 8080
 

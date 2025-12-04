@@ -1,0 +1,7 @@
+log_level: INFO
+port_name: /dev/ttyUSB0
+
+http_config:
+  address: ":8080"
+  timeout: 30s
+

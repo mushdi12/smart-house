@@ -33,6 +33,30 @@ func NewTurnOffFan(log *slog.Logger, fanner core.Fanner) http.HandlerFunc {
 	}
 }
 
+
+func NewTurnOnLight(log *slog.Logger, lightner core.Lightner) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		response, err := lightner.TurnOnLamp()
+		if err != nil {
+			log.Error("failed to turn on light", "error", err)
+			http.Error(w, "failed to turn on light", http.StatusInternalServerError)
+			return
+		}
+		encodeReply(w, response)
+	}
+}
+
+func NewTurnOffLight(log *slog.Logger, lightner core.Lightner) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		response, err := lightner.TurnOffLamp()
+		if err != nil {
+			log.Error("failed to turn off light", "error", err)
+			http.Error(w, "failed to turn off light", http.StatusInternalServerError)
+			return
+		}
+		encodeReply(w, response)
+	}
+}
 func encodeReply(w io.Writer, reply any) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
