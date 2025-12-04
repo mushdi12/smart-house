@@ -1,32 +1,12 @@
-container_runtime := $(shell which docker)
+# Компиляция для Raspberry Pi 4/5 (64-bit)
+build-arm64:
+	@GOOS=linux GOARCH=arm64 go build -o bin/goServer cmd/go-server/main.go
 
-$(info using ${container_runtime})
+build-arm64-reflash:
+	@GOOS=linux GOARCH=arm64 go build -o bin/resetEsp cmd/reset-esp/main.go
 
-up: down
-	$(container_runtime) compose up --build -d
-
-
-down:
-	$(container_runtime) compose down
-
-
-run-test:
-	$(container_runtime) run --rm --network=host tests:latest
-
-test:
-	make down
-	make up
-	make run-tests
-	make down
-	@echo "test finished"
-
-lint:
-	golangci-lint run -E gocritic -v ./...
-
-logs:
-	$(container_runtime) compose logs -f api-gateway
-
-status:
-	$(container_runtime) compose ps
+clean:
+	@rm -f bin/go-server bin/resetEsp
+	@rm -f bin/go-server bin/goServer
 
 

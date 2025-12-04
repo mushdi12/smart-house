@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-house-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - LOG_LEVEL=INFO
+      - PORT_NAME=/dev/ttyUSB0
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml:ro
+      - /dev:/dev:ro  # Для доступа к USB устройствам (опционально)
+    networks:
+      - smart-house-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart-house-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - smart-house-network
+    restart: unless-stopped
+
+networks:
+  smart-house-network:
+    driver: bridge
+
